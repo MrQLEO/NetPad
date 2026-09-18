@@ -3,6 +3,7 @@ import {ISettingsApiClient} from "@application";
 
 export interface ISettingsService extends ISettingsApiClient {
     toggleTheme(): Promise<void>;
+    setLanguage(language: string): Promise<void>;
 }
 
 export const ISettingsService = DI.createInterface<ISettingsService>();

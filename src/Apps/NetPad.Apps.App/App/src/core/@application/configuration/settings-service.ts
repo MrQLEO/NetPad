@@ -13,4 +13,10 @@ export class SettingsService extends SettingsApiClient implements ISettingsServi
         clone.appearance.theme = clone.appearance.theme === "Light" ? "Dark" : "Light";
         await this.update(clone);
     }
+
+    public async setLanguage(language: string): Promise<void> {
+        const clone = this.settings.clone();
+        clone.language = language;
+        await this.update(clone);
+    }
 }

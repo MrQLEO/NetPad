@@ -5,6 +5,9 @@ import "bootstrap";
 import "./styles/main.scss";
 import "@common/globals";
 import {AppMutationObserver} from "@common";
+import {ITranslationService} from "@application/i18n/itranslation-service";
+import {TranslationService} from "@application/i18n/translation-service";
+import {TValueConverter} from "@application/value-converters/t-value-converter";
 import {
     ConsoleLogSink,
     ContextMenu,
@@ -53,6 +56,7 @@ const builder = Aurelia.register(
     Registration.singleton(IEventBus, EventBus),
     Registration.singleton(ISession, Session),
     Registration.singleton(ISettingsService, SettingsService),
+    Registration.singleton(ITranslationService, TranslationService),
     Registration.singleton(AppMutationObserver, AppMutationObserver),
     Registration.singleton(IBackgroundService, SettingsBackgroundService),
 
@@ -78,6 +82,7 @@ const builder = Aurelia.register(
     TimeValueConverter,
     TruncateValueConverter,
     YesNoValueConverter,
+    TValueConverter,
 
     // Globally registered custom elements
     ContextMenu,
@@ -106,6 +111,14 @@ await appActions.loadAppSettings(builder);
 const shell = await appActions.configureAndGetShell(builder);
 logger.debug(`Configured for shell: ${shell.constructor.name}`);
 
+// 根据已保存的设置初始化当前语言（仅设置当前语言，不持久化、不广播）。
+// 必须放在 configureAndGetShell 之后：壳会在其中注册 IIpcGateway，
+// 而 TranslationService 构造时会牵引 IEventBus -> EventBus -> @IIpcGateway；
+// 若在壳注册之前就 get(ITranslationService)，IIpcGateway 尚未注册会触发
+// AUR0012（InterfaceSymbol<(anonymous)>），导致整个容器构造失败、页面空白。
+const translation = builder.container.get(ITranslationService);
+translation.initialize(builder.container.get(Settings).language);
+
 // Configure the proper window and start the app
 const entryPoint = await appActions.configureAndGetAppEntryPoint(builder);
 const app = builder.app(entryPoint as CustomElementType);
@@ -114,3 +127,7 @@ window.addEventListener("unload", () => app.stop(true));
 
 await app.start();
 logger.debug("App started");
+
+// 应用启动完成、IPC 网关已连接后再订阅后端语言变更广播（跨窗口同步用）。
+// 必须在 app.start() 之后，否则 SignalRIpcGateway 尚未 start()、订阅会抛错。
+translation.subscribeToServerEvents();

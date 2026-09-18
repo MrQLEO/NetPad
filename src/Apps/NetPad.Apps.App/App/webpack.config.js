@@ -1,4 +1,28 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+
+// Node 22+ 暴露了全局 localStorage，但构建（非浏览器）环境访问它会抛
+// "Cannot initialize local storage without a --localstorage-file path"，
+// html-webpack-plugin 编译模板时会碰到它。这里给构建进程注入一个内存桩，
+// 仅影响 webpack 进程；浏览器端仍使用原生 localStorage，产物不受影响。
+if (typeof globalThis !== "undefined" && !globalThis.__netpadLsPolyfilled) {
+  try {
+    const _store = new Map();
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      writable: true,
+      value: {
+        getItem: (k) => (_store.has(k) ? _store.get(k) : null),
+        setItem: (k, v) => { _store.set(k, String(v)); },
+        removeItem: (k) => { _store.delete(k); },
+        clear: () => _store.clear(),
+        key: (i) => Array.from(_store.keys())[i] ?? null,
+        get length() { return _store.size; },
+      },
+    });
+    globalThis.__netpadLsPolyfilled = true;
+  } catch (_) { /* 忽略：某些环境下该属性不可重定义 */ }
+}
+
 const path = require("path");
 const Dotenv = require("dotenv-webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
