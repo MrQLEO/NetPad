@@ -4,7 +4,7 @@ import {IDisposable} from "@aurelia/kernel";
 // Signaler。若从 "@aurelia/runtime" 导入会拿到“未注册”的那份令牌，导致容器构造抛 AUR0012。
 // 项目内所有框架令牌（ILogger/IContainer/DI 等）均遵循从 "aurelia" 导入的约定。
 import {ISignaler} from "aurelia";
-import {IEventBus, ISettingsService, SettingsUpdatedEvent} from "@application";
+import {IEventBus, SettingsUpdatedEvent} from "@application";
 import en from "./en.json";
 import zhCN from "./zh-CN.json";
 import ja from "./ja.json";
@@ -33,7 +33,6 @@ export class TranslationService implements ITranslationService {
     ];
 
     constructor(
-        @ISettingsService private readonly settingsService: ISettingsService,
         @IEventBus private readonly eventBus: IEventBus,
         @ISignaler private readonly signaler: ISignaler
     ) {
@@ -79,25 +78,13 @@ export class TranslationService implements ITranslationService {
         }
     }
 
-    public async setLanguage(language: string): Promise<void> {
+    // 仅切换当前语言并触发刷新信号与回调，不持久化。供本窗口即时切换与跨窗口事件同步复用，避免重复写库与回环。
+    // 语言无变化时直接跳过，避免每次（无关的）设置保存都触发菜单重建等副作用。
+    public applyLanguage(language: string): void {
         if (!RESOURCES[language]) {
             language = FALLBACK_LANGUAGE;
         }
 
-        // 本窗口立即切换并触发信号（本窗口 `| t` 即时刷新），再持久化。
-        this.applyLanguage(language);
-
-        // 持久化到用户设置；后端会再广播 SettingsUpdatedEvent，使其他窗口同步。
-        try {
-            await this.settingsService.setLanguage(language);
-        } catch (err) {
-            console.error("Failed to persist language setting:", err);
-        }
-    }
-
-    // 仅切换当前语言并触发刷新信号与回调，不持久化。供本窗口即时切换与跨窗口事件同步复用，避免重复写库与回环。
-    // 语言无变化时直接跳过，避免每次（无关的）设置保存都触发菜单重建等副作用。
-    private applyLanguage(language: string): void {
         if (this.currentLanguage === language) {
             return;
         }

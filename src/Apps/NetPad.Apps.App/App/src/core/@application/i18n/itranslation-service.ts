@@ -39,9 +39,11 @@ export interface ITranslationService {
     t(key: string, params?: Record<string, string | number>): string;
 
     /**
-     * 切换语言并持久化到用户设置。会立即触发刷新信号与变更回调。
+     * 仅切换本窗口语言并立即触发刷新信号与变更回调，不持久化。
+     * 持久化由调用方（如设置保存）负责；其他窗口通过监听后端广播的 SettingsUpdatedEvent 同步。
+     * 语言无变化时为无操作。
      */
-    setLanguage(language: string): Promise<void>;
+    applyLanguage(language: string): void;
 
     /**
      * 仅初始化当前语言（不持久化、不广播），用于应用启动时根据已保存的设置设定语言。
