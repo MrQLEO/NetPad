@@ -88,5 +88,4 @@ After the code changes are in place, test it:
 6. Spot-check dynamic strings that interpolate values (e.g. the "Could not open script" alert) to confirm
    placeholders render correctly.
 
-> If your language is not fully translated yet, that's fine — ship the partial translation and iterate. If you're
-> having issues, and need help, please reach out via Discord.
+> If your language is not fully translated yet, that's fine — ship the partial translation and iterate.
