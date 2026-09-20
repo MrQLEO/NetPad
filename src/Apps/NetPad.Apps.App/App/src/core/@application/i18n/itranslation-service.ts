@@ -1,64 +1,71 @@
 import {DI, IDisposable} from "aurelia";
 
 /**
- * 语言切换信号名。TranslationService 在语言变更后通过 ISignaler 触发该信号，
- * 所有使用了 TValueConverter（即模板里的 `| t`）的绑定会自动重算并刷新 UI（无需刷新页面）。
+ * The name of the language-changed signal. After the language changes, TranslationService fires
+ * this signal through ISignaler, causing all bindings that use TValueConverter (i.e. `| t` in
+ * templates) to be re-evaluated and the UI to refresh without a page reload.
  *
- * 注意：桌面端每个 OS 窗口都是独立的渲染进程、拥有各自的 ISignaler 单例，
- * 因此跨窗口同步由 TranslationService 监听后端广播的 SettingsUpdatedEvent、在“本窗口”再次 dispatchSignal 实现，
- * 不能依赖单一全局信号跨进程传递。
+ * Note: on desktop, every OS window is a separate renderer process with its own ISignaler
+ * singleton, so cross-window synchronization cannot rely on a single global signal. Instead,
+ * TranslationService listens for the SettingsUpdatedEvent broadcast by the backend and re-dispatches
+ * the signal in each window.
  */
 export const LANGUAGE_CHANGED_SIGNAL = "language-changed";
 
 /**
- * 一种支持的语言。
+ * A supported language.
  */
 export interface LanguageInfo {
-    /** 语言代码，如 "en"、"zh-CN"、"ja" */
+    /** The language code, e.g. "en", "zh-CN", "ja" */
     code: string;
-    /** 该语言的自称（native name），用于语言选择列表，如 "English"、"中文" */
+    /** The native name of the language, used in the language selector, e.g. "English" */
     displayName: string;
 }
 
 /**
- * 应用翻译服务。提供 t() 翻译、语言切换与变更订阅。
+ * Provides app-wide translation: t(), language switching and change subscriptions.
  */
 export interface ITranslationService {
-    /** 当前语言代码 */
+    /** The current language code */
     readonly currentLanguage: string;
 
-    /** 所有可用语言 */
+    /** All available languages */
     readonly availableLanguages: LanguageInfo[];
 
     /**
-     * 翻译指定 key。
-     * @param key 点分 key，如 "menu.file.new"
-     * @param params 可选插值参数，模板里用 {name} 占位
-     * @returns 翻译后的文本；若当前语言与回退语言都缺失该 key，则返回 key 本身（便于发现漏翻）
+     * Translates the given key.
+     * @param key A dot-separated key, e.g. "menu.file.new"
+     * @param params Optional interpolation parameters, referenced as {name} in the value
+     * @returns The translated text. If the key is missing in both the current and fallback
+     * language, the key itself is returned (which makes missing translations easy to spot).
      */
     t(key: string, params?: Record<string, string | number>): string;
 
     /**
-     * 仅切换本窗口语言并立即触发刷新信号与变更回调，不持久化。
-     * 持久化由调用方（如设置保存）负责；其他窗口通过监听后端广播的 SettingsUpdatedEvent 同步。
-     * 语言无变化时为无操作。
+     * Switches the language of the current window only, immediately firing the refresh signal
+     * and change callbacks. Does not persist.
+     * Persistence is the caller's responsibility (e.g. saving settings); other windows sync by
+     * listening to the SettingsUpdatedEvent broadcast by the backend. No-op if the language is unchanged.
      */
     applyLanguage(language: string): void;
 
     /**
-     * 仅初始化当前语言（不持久化、不广播），用于应用启动时根据已保存的设置设定语言。
+     * Initializes the current language only (no persistence, no signal), used at app startup to
+     * set the language from saved settings.
      */
     initialize(language?: string): void;
 
     /**
-     * 订阅语言变更，返回用于取消订阅的句柄。
+     * Subscribes to language changes. Returns a handle to unsubscribe.
      */
     onLanguageChanged(callback: (language: string) => void): IDisposable;
 
     /**
-     * 订阅后端广播的语言变更事件，用于桌面端跨窗口同步。
-     * 必须在 IPC 网关（SignalRIpcGateway）start() 之后调用，否则 this.connection 尚未创建会报错；
-     * 故不在构造函数里订阅，而由 main.ts 在 app.start() 之后调用。
+     * Subscribes to language change events broadcast by the backend, used for cross-window
+     * synchronization on desktop.
+     * Must be called after the IPC gateway (SignalRIpcGateway) has started, otherwise
+     * this.connection does not exist yet and subscribing throws. That is why this is not done in
+     * the constructor; main.ts calls it after app.start().
      */
     subscribeToServerEvents(): void;
 }

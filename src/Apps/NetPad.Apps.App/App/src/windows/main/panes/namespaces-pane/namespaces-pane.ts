@@ -21,7 +21,8 @@ export class NamespacesPane extends Pane {
     public override get name() {
         const environment = this.session.active;
         if (!environment) return this._name;
-        // 动态带上数量；语言切换时信号会让 tooltip 绑定重算本 getter，译文跟着刷新
+        // Append the count dynamically; on language change the signal makes the tooltip binding
+        // re-evaluate this getter, so the translation stays up to date.
         return `${this.translation.t("ui.namespaces")} (${environment.script.config.namespaces.length})`;
     }
 

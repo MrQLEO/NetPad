@@ -50,9 +50,12 @@ export class Window extends WindowBase {
         try {
             await this.settingsService.update(this.editableSettings);
 
-            // 语言随上面的 update 一并持久化，后端会广播 SettingsUpdatedEvent 让其他窗口同步；
-            // 这里只做本窗口的即时切换。不要调 setLanguage 之类会再次写库的方法——
-            // 它基于单例设置克隆后整体回写，广播尚未到达时会把刚保存的其他设置（如主题）覆盖回旧值。
+            // Language is persisted along with the update above; the backend broadcasts
+            // SettingsUpdatedEvent so other windows sync. Here we only switch the language of
+            // this window immediately. Do not call methods that persist again (like cloning the
+            // singleton settings and updating it wholesale): before the broadcast has been
+            // applied to the singleton, that clone carries stale values and would revert other
+            // just-saved settings (e.g. the theme).
             this.translation.applyLanguage(this.editableSettings.language ?? "en");
 
             return true;

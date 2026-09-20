@@ -111,11 +111,11 @@ await appActions.loadAppSettings(builder);
 const shell = await appActions.configureAndGetShell(builder);
 logger.debug(`Configured for shell: ${shell.constructor.name}`);
 
-// 根据已保存的设置初始化当前语言（仅设置当前语言，不持久化、不广播）。
-// 必须放在 configureAndGetShell 之后：壳会在其中注册 IIpcGateway，
-// 而 TranslationService 构造时会牵引 IEventBus -> EventBus -> @IIpcGateway；
-// 若在壳注册之前就 get(ITranslationService)，IIpcGateway 尚未注册会触发
-// AUR0012（InterfaceSymbol<(anonymous)>），导致整个容器构造失败、页面空白。
+// Initialize the current language from saved settings (sets the language only, no persistence, no signal).
+// This must run after configureAndGetShell: the shell registers IIpcGateway there, and constructing
+// TranslationService pulls in IEventBus -> EventBus -> @IIpcGateway. Resolving ITranslationService
+// before the shell registers IIpcGateway triggers AUR0012 (InterfaceSymbol<(anonymous)>), which fails
+// the whole container construction and leaves the page blank.
 const translation = builder.container.get(ITranslationService);
 translation.initialize(builder.container.get(Settings).language);
 
@@ -128,6 +128,7 @@ window.addEventListener("unload", () => app.stop(true));
 await app.start();
 logger.debug("App started");
 
-// 应用启动完成、IPC 网关已连接后再订阅后端语言变更广播（跨窗口同步用）。
-// 必须在 app.start() 之后，否则 SignalRIpcGateway 尚未 start()、订阅会抛错。
+// Subscribe to language change events broadcast by the backend (for cross-window sync) only after
+// the app has started and the IPC gateway is connected; doing so earlier throws because
+// SignalRIpcGateway has not started yet.
 translation.subscribeToServerEvents();

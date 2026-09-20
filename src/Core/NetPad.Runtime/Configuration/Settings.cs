@@ -155,7 +155,8 @@ public class Settings : ISettingsOptions
 
     public Settings SetLanguage(string? language)
     {
-        // 空值不入，交给 DefaultMissingValues() 兜底为 "en"，避免把无效语言写进设置文件。
+        // Don't accept empty values here; DefaultMissingValues() falls back to "en", keeping
+        // invalid languages out of the settings file.
         Language = string.IsNullOrWhiteSpace(language) ? null : language;
         return this;
     }

@@ -50,7 +50,8 @@ export class MainMenuService implements IMainMenuService {
         this.recentScriptsStore.onChanged(() => this.applyRecentMenu());
         this.applyRecentMenu();
 
-        // 语言切换后重建菜单（菜单文本在构建时即固定，需重建以套用新语言）。
+        // Rebuild the menu after a language change (menu text is fixed at build time, so the
+        // menu must be rebuilt to pick up the new language).
         this.translation.onLanguageChanged(() => {
             this._items = this.buildMenuItems();
             this.applyRecentMenu();

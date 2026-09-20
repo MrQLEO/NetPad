@@ -1,19 +1,23 @@
 import {ITranslationService, LANGUAGE_CHANGED_SIGNAL} from "@application/i18n/itranslation-service";
 
 /**
- * 翻译值转换器。模板中以 `key | t` 使用，例如 `${'menu.file.new' | t}` 或 `title.bind="'titlebar.close' | t"`。
+ * Translation value converter. Used in templates as `key | t`, e.g. `${'menu.file.new' | t}` or
+ * `title.bind="'titlebar.close' | t"`.
  *
- * 通过 `signals` 声明依赖 LANGUAGE_CHANGED_SIGNAL：TranslationService 在语言变更后通过 ISignaler 触发该信号，
- * Aurelia 会重算本窗口所有 `| t` 绑定并刷新 UI（无需手动刷新页面）。
+ * Declares its dependency on LANGUAGE_CHANGED_SIGNAL via `signals`: after the language changes,
+ * TranslationService fires that signal through ISignaler and Aurelia re-evaluates all `| t`
+ * bindings in this window, refreshing the UI without a manual page reload.
  *
- * 跨窗口同步说明：桌面端每个 OS 窗口是独立的渲染进程、拥有各自的 ISignaler 单例，
- * 单一窗口 dispatch 的信号不会跨进程到达其它窗口。因此 TranslationService 在收到后端广播的
- * SettingsUpdatedEvent 时，会在“本窗口”再次 dispatchSignal，从而让每个窗口各自的 `| t` 绑定都得到刷新。
+ * Cross-window note: on desktop, every OS window is a separate renderer process with its own
+ * ISignaler singleton; a signal dispatched in one window never reaches the others. That is why
+ * TranslationService re-dispatches the signal in each window when it receives the
+ * SettingsUpdatedEvent broadcast by the backend, so every window's `| t` bindings refresh.
  */
 export class TValueConverter {
-    // 必须是实例字段，不能写成 static：框架在绑定挂载时（runtime 的 astBind）从 DI 容器
-    // 解析出的是转换器“实例”，实例读不到静态属性，vc.signals 会是 undefined，
-    // 信号监听就挂不上去，语言切换后 dispatchSignal 对所有 `| t` 绑定都不生效。
+    // Must be an instance field, not static: when a binding is attached (astBind in the runtime)
+    // the framework resolves the converter *instance* from the DI container. Instances cannot see
+    // static properties, so a static `signals` would read as undefined, the signal listener would
+    // never be attached, and dispatchSignal would do nothing for all `| t` bindings.
     public readonly signals = [LANGUAGE_CHANGED_SIGNAL];
 
     constructor(@ITranslationService private readonly translation: ITranslationService) {
