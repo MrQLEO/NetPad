@@ -34,7 +34,7 @@
         </p>
         <div style="width: 200px">
             <div class="d-flex gap-3 align-items-center">
-                <b>${'settings.editor.monacoOptions.theme' | t}</b>
+                <b class="text-nowrap">${'settings.editor.monacoOptions.theme' | t}</b>
                 <select class="form-select form-select-sm p-3" value.bind="theme">
                     <option value="">${'settings.editor.monacoOptions.themeAuto' | t}</option>
                     <option repeat.for="theme of getThemes()" value.bind="theme.id">${theme.name}</option>
